@@ -5,7 +5,8 @@ def changeMXDFile(fullPath):
   if extension.lower() == ".mxd":
     mxd = arcpy.mapping.MapDocument(fullPath)
     #mxd.findAndReplaceWorkspacePaths(u"\\10.64.68.36\j\ElectronicArchive\FondOldCGM\", u"D:")#do when need change name of disk
-    mxd.findAndReplaceWorkspacePaths(u"\\10.64.68.36\j\FondOldCGM\", u"\\10.64.68.36\j\ElectronicArchive\FondOldCGM\")
+    mxd.findAndReplaceWorkspacePaths(u"\\10.64.68.36\j\FondOldCGM\", 
+				     u"\\10.64.68.36\j\ElectronicArchive\FondOldCGM\")
     outputFile = os.path.join(outputFolder, os.path.basename(nameWithPath) + ".mxd")
     mxd.saveACopy(outputFile, "10.3")
     arcpy.AddMessage("file " + os.path.basename(nameWithPath) + ".mxd is change")
