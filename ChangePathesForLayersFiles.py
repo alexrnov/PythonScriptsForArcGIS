@@ -18,6 +18,6 @@ if __name__ == '__main__':
   #sdeFile = r"D:/gis2.sde"#do when need used locale sde-file
   sdeFile = r"\\10.64.68.36\j\ElectronicArchive\Connect\gis1.sde"
   for fileName in os.listdir(inputFolder):
-	fullPath = os.path.join(inputFolder, fileName)
+    fullPath = os.path.join(inputFolder, fileName)
     if os.path.isfile(fullPath): changeLayerFiles(fullPath)
         
