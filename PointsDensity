@@ -1,0 +1,124 @@
+import arcpy, sys, arcgisscripting, os
+#Функция считывает точки из входного картографического слоя
+def read_points(layer):
+        arr_wells=[]#массив для записывания скважин
+        rows = gp.SearchCursor(layer)
+        layer = gp.describe(layer)
+        for row in rows:#перебор точек картографического слоя
+                feat = row.GetValue(layer.ShapeFieldName)
+                point = feat.getpart(0)
+                arr_wells.append([round(point.x,2),round(point.y,2)])#добавить в массив текущую точку
+        return arr_wells
+def excent(arrXY,st):      #Функция вычисляет эксент входного точечного слоя и возвращает координаты эксента
+        x_min = (1.0e400)
+        x_max = - x_min
+        y_min = x_min
+        y_max = -y_min
+        k=0
+        while(k<len(arrXY)):#Вычисление минимальных и максимальных координат x и y
+                x_min = min(x_min,arrXY[k][0])
+                x_max = max(x_max,arrXY[k][0])
+                y_min = min(y_min,arrXY[k][1])
+                y_max = max(y_max,arrXY[k][1])
+                k+=1
+        k = None
+        return x_min-st,x_max+st,y_min-st,y_max+st #Немного расширить границы матрицы
+def matrix_points(x_min,x_max,y_min,y_max,st):#Функция возвращает массив координат x,y, расположенных через равный интервал interval  
+        #st - интервал между точками                 
+        arr_points=[]
+        x_min2 = x_min #в пределах вычесленного эксента
+        y_min2 = y_min
+        while (y_min2 < y_max):         #Приращение по оси y
+                while (x_min2 < x_max):         #Приращение по оси x 
+                        x_min2 = x_min2+st
+                        arr_points.append([int(x_min2*st)/st,int(y_min2*st)/st,0])
+                y_min2 = y_min2+st
+                x_min2 = x_min
+        del x_min2,y_min2 
+        return arr_points #вернуть массив [x,y] через интервал st в пределах эксента
+def write_to_layer(lay,C_System,array_map,gp):
+        fc_path, fc_name = os.path.split(lay)#разделить директорию и имя файла
+        if fc_path.count("-") or fc_name.count("-"):
+                gp.AddMessage(" '-' Недопустимый символ в названии файла")
+                raise SystemExit(1)#завершить работу программы
+        try:
+                gp.CreateFeatureClass(fc_path,fc_name,"POINT","","","ENABLED",C_System)#создать точечный слой
+        except:
+                gp.AddMessage("Ошибка создания картографического слоя")
+                raise SystemExit(1)#завершить работу программы
+        gp.AddField(lay,"пересечение","SHORT",15,15)#!!!!!!!!!убрать если используется второй вариант
+        rows = gp.InsertCursor(lay)
+        pnt = gp.CreateObject("Point")
+        k=0
+        while(k<len(array_map)):
+                feat = rows.NewRow()#Новая строка
+                pnt.id = k #ID
+    		pnt.x = float(array_map[k][0])
+    		pnt.y = float(array_map[k][1])
+    		feat.SetValue("пересечение",array_map[k][2])#!!!!!!!!!убрать если используется второй вариант
+    		feat.shape = pnt
+    		rows.InsertRow(feat)#добавить строку к таблице слоя
+                k+=1
+def find_subsection(matrix,map_points,radius_size):
+        k=0
+        arr_output=[]
+        while(k<len(matrix)):#перебор элементов матрицы
+                x1 = matrix[k][0]
+                y1 = matrix[k][1]
+                m=0
+                while(m<len(map_points)):#перебор скважин
+                        x2 = map_points[m][0]
+                        y2 = map_points[m][1]
+                        distance = math.sqrt((x2-x1)**2+(y2-y1)**2)#расстояние между текущей точкой матрицы и скважиной
+                        if(distance<=radius_size):#если расстояние между точками меньше расстояния радиуса искомого объекта
+                                matrix[k][2]=1
+                                break #перейти к следующей точке матрицы
+                        m+=1
+                k+=1
+        return matrix
+
+        
+if __name__ == '__main__':
+        gp = arcgisscripting.create(9.3)
+        InpPFC = arcpy.GetParameterAsText(0)#входной точечный слой
+        size_object = int(arcpy.GetParameterAsText(1))#размер искомого объекта(радиус)
+        step = int(arcpy.GetParameterAsText(2))#размер растровой ячейки
+        OutputFC = arcpy.GetParameterAsText(3)#выходной точечный слой
+        arr_input = read_points(InpPFC)#получить массив скважин
+        x_min1, x_max1, y_min1, y_max1 = excent(arr_input,step)#вычислить координаты эксента
+        arr_matrix = matrix_points(x_min1, x_max1, y_min1, y_max1,step)#генерация матрицы точек с заданным интервалом 
+        arcpy.AddMessage("количество точек матрицы: "+str(len(arr_matrix)))
+
+        arr_matrix = find_subsection(arr_matrix,arr_input,size_object)#для каджой точки матрицы вычислить есть ли пересечение со скважинами
+
+        '''
+        #второй вариант, который выводит только точки где нет пересечения окружности со скважинами 
+        arr=[]
+        k=0
+        while(k<len(arr_matrix)):
+                if(arr_matrix[k][2]==0):
+                         arr.append(arr_matrix[k])   
+                k+=1
+        Spat_ref = gp.describe(InpPFC).spatialreference
+        write_to_layer(OutputFC,Spat_ref,arr,gp)
+        '''
+        kol_not_subsection = 0#количество событий когда нет пересечения окружности со скважинами(поисковый объект пропущен)
+        kol_subsection = 0#количество событий когда есть пересечение окружности со скважинами(поисковый объект не пропущен)
+        k=0
+        while(k<len(arr_matrix)):
+                if(arr_matrix[k][2]==0):kol_not_subsection+=1
+                else:kol_subsection+=1  
+                k+=1
+        '''
+        #сначала необходима обрезка
+        arcpy.AddMessage("kol_not_subsection: "+str(kol_not_subsection))
+        arcpy.AddMessage("kol_subsection: "+str(kol_subsection))
+        arcpy.AddMessage("len(arr_matrix): "+str(len(arr_matrix)))
+        probability = (float(kol_not_subsection)/float(len(arr_matrix)))*100.0
+        arcpy.AddMessage("вероятность пропуска поискового объекта с радиусом "+str(size_object)+": "+\
+        str(probability)+"%")
+        '''
+        Spat_ref = gp.describe(InpPFC).spatialreference
+        write_to_layer(OutputFC,Spat_ref,arr_matrix,gp)
+                
+        
