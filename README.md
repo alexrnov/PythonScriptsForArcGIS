@@ -7,18 +7,18 @@ PointsDensity.py determines whether a circle (search body) can be entered betwee
   <img src="https://github.com/alexrnov/Files/blob/master/pointsDensity.jpg" width="350" title="points density">
 </p>
 
-Logging visualization tools:
+Logging visualization tools.
 
 Gamma-ray method:
 
 <p align="center">
-  <img src="https://github.com/alexrnov/Files/blob/master/nigp2.jpg" width="350" title="gamma-ray method">
+  <img src="https://github.com/alexrnov/Files/blob/master/nigp2.jpg" width="550" title="gamma-ray method">
 </p>
 
 Statistical transformation block model:
 
 <p align="center">
-  <img src="https://github.com/alexrnov/Files/blob/master/nigp3.jpg" width="350" title="points density">
+  <img src="https://github.com/alexrnov/Files/blob/master/nigp3.jpg" width="550" title="points density">
 </p>
 
 
