@@ -18,7 +18,15 @@ Gamma-ray method:
 Statistical transformation block model:
 
 <p align="center">
-  <img src="https://github.com/alexrnov/Files/blob/master/nigp3.jpg" width="700" title="points density">
+  <img src="https://github.com/alexrnov/Files/blob/master/nigp3.jpg" width="700" title="points model">
 </p>
+
+Lines to points:
+
+<p align="center">
+  <img src="https://github.com/alexrnov/Files/blob/master/nigp4.jpg" width="700" title="lines to points">
+</p>
+
+
 
 
